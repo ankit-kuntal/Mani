@@ -124,9 +124,10 @@
   }
 }
 
-/* Anti-cheat measures for puzzle */
+/* Puzzle anti-cheat styling */
 .puzzle-container {
-  user-select: none;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 
 .puzzle-canvas-wrapper {
@@ -134,16 +135,8 @@
 }
 
 .puzzle-canvas-wrapper canvas {
-  user-select: none;
-  -webkit-user-select: none;
+  user-select: none !important;
+  -webkit-user-select: none !important;
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
-}
-
-/* Disable text selection on puzzle page */
-.puzzle-content {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }

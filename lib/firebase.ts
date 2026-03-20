@@ -11,36 +11,23 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:322533177977:web:e3ef58d5ac5e7b019af2a8',
 };
 
-// Check if Firebase config is complete
-const isFirebaseConfigValid = Object.values(firebaseConfig).every(value => value);
+// Initialize Firebase app (with error handling)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-if (!isFirebaseConfigValid && typeof window !== 'undefined') {
-  console.error(
-    'Firebase configuration is incomplete. Please add the following environment variables:\n' +
-    '- NEXT_PUBLIC_FIREBASE_API_KEY\n' +
-    '- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN\n' +
-    '- NEXT_PUBLIC_FIREBASE_PROJECT_ID\n' +
-    '- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET\n' +
-    '- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID\n' +
-    '- NEXT_PUBLIC_FIREBASE_APP_ID'
-  );
-}
-
-// Initialize Firebase (avoid re-initialization in dev mode)
-let app;
-let auth;
-let db;
+// Get Auth and Firestore with error suppression (errors will be caught in the provider)
+let auth: any = null;
+let db: any = null;
 
 try {
-  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
   auth = getAuth(app);
+} catch (error) {
+  console.error('[v0] Firebase auth initialization error:', error);
+}
+
+try {
   db = getFirestore(app);
 } catch (error) {
-  console.error('[v0] Firebase initialization error:', error);
-  // Create dummy app for error handling
-  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-  auth = null;
-  db = null;
+  console.error('[v0] Firebase firestore initialization error:', error);
 }
 
 export { auth, db };
