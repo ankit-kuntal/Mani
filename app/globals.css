@@ -124,7 +124,7 @@
   }
 }
 
-/* Anti-cheat measures */
+/* Anti-cheat measures for puzzle */
 .puzzle-container {
   @apply select-none;
 }
