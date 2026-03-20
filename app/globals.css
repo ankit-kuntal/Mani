@@ -126,7 +126,7 @@
 
 /* Anti-cheat measures */
 .puzzle-container {
-  @apply user-select-none;
+  @apply select-none;
 }
 
 .puzzle-canvas-wrapper {
