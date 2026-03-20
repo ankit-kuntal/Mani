@@ -73,6 +73,20 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
               </ul>
             </>
           )}
+
+          {error.message.includes('configuration-not-found') && (
+            <>
+              <p className="text-sm text-foreground">
+                Firebase Auth configuration is missing or mismatched. Check:
+              </p>
+              <ul className="text-xs space-y-1 list-disc list-inside">
+                <li>`authDomain` matches your Firebase project (<strong>mani-puzzle.firebaseapp.com</strong>)</li>
+                <li>`apiKey`, `projectId`, `appId` are from the same Firebase app</li>
+                <li>The correct Firebase app is used in console</li>
+              </ul>
+            </>
+          )}
+
           <p className="text-xs text-muted-foreground">
             Check Firebase Console under Project Settings for your correct credentials.
           </p>

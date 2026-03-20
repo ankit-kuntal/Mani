@@ -10,6 +10,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { any } from 'zod';
 
 export interface UserDocument {
   email: string;
@@ -135,7 +136,7 @@ export async function claimReward(uid: string, payoutDetails: any): Promise<void
     await updateUserDocument(uid, {
       rewardClaimed: true,
       payoutDetails,
-    });
+    } as any);
   } catch (error) {
     console.error('Error claiming reward:', error);
     throw error;

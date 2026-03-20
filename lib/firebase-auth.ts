@@ -9,20 +9,25 @@ import { auth } from './firebase';
 import { updateUserDocument, getUserDocument } from './firebase-firestore';
 
 export async function signUp(email: string, password: string): Promise<User> {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-  // Create user document in Firestore
-  await updateUserDocument(user.uid, {
-    email,
-    attemptsLeft: 2,
-    hasSolvedCorrectly: false,
-    rewardClaimed: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+    // Create user document in Firestore
+    await updateUserDocument(user.uid, {
+      email,
+      attemptsLeft: 2,
+      hasSolvedCorrectly: false,
+      rewardClaimed: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-  return user;
+    return user;
+  } catch (error: any) {
+    console.error('[Firebase Auth signUp] error', error.code, error.message);
+    throw new Error(`${error.code}: ${error.message}`);
+  }
 }
 
 export async function login(email: string, password: string): Promise<User> {
