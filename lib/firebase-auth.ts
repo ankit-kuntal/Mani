@@ -1,0 +1,66 @@
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  User,
+  Auth,
+} from 'firebase/auth';
+import { auth } from './firebase';
+import { updateUserDocument, getUserDocument } from './firebase-firestore';
+
+export async function signUp(email: string, password: string): Promise<User> {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
+
+  // Create user document in Firestore
+  await updateUserDocument(user.uid, {
+    email,
+    attemptsLeft: 2,
+    hasSolvedCorrectly: false,
+    rewardClaimed: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  return user;
+}
+
+export async function login(email: string, password: string): Promise<User> {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+export async function loginWithTempPassword(
+  email: string,
+  tempPassword: string
+): Promise<{ user: User; tempPasswordValid: boolean }> {
+  // First, verify the temp password against Firestore
+  const userDoc = await getUserDocument(email);
+
+  if (!userDoc || userDoc.tempPassword !== tempPassword || !userDoc.hasSolvedCorrectly) {
+    return {
+      user: null as any,
+      tempPasswordValid: false,
+    };
+  }
+
+  // Temp password is valid - get the user's Firebase password
+  // Note: In production, you'd handle this differently
+  // For now, we'll just mark the user as authenticated via hasSolvedCorrectly flag
+  return {
+    user: auth.currentUser as User,
+    tempPasswordValid: true,
+  };
+}
+
+export async function signOut(): Promise<void> {
+  await firebaseSignOut(auth);
+}
+
+export async function validateTempPassword(
+  uid: string,
+  tempPassword: string
+): Promise<boolean> {
+  const userDoc = await getUserDocument(uid);
+  return userDoc?.tempPassword === tempPassword && userDoc?.hasSolvedCorrectly === true;
+}
