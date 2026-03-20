@@ -22,6 +22,14 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Check if auth is null (initialization failed)
+    if (!auth) {
+      const err = new Error('Firebase authentication failed to initialize. Please verify your API key is valid and has authentication enabled.');
+      setError(err);
+      setLoading(false);
+      return;
+    }
+
     try {
       const unsubscribe = onAuthStateChanged(
         auth,
@@ -44,25 +52,29 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Show error message if Firebase is not configured
-  if (error && error.message.includes('invalid-api-key')) {
+  // Show error message if Firebase is not configured or has errors
+  if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="max-w-md space-y-4 p-6 rounded-lg border border-destructive bg-destructive/10">
-          <h1 className="text-xl font-bold text-destructive">Firebase Configuration Required</h1>
+          <h1 className="text-xl font-bold text-destructive">Firebase Configuration Error</h1>
           <p className="text-sm text-foreground">
-            The app is not configured with Firebase credentials. Please add the following environment variables in your project Settings:
+            {error.message || 'Firebase initialization failed. Please check your credentials.'}
           </p>
-          <ul className="text-xs space-y-1 font-mono bg-background p-3 rounded border">
-            <li>NEXT_PUBLIC_FIREBASE_API_KEY</li>
-            <li>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN</li>
-            <li>NEXT_PUBLIC_FIREBASE_PROJECT_ID</li>
-            <li>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET</li>
-            <li>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID</li>
-            <li>NEXT_PUBLIC_FIREBASE_APP_ID</li>
-          </ul>
+          {error.message.includes('invalid-api-key') && (
+            <>
+              <p className="text-sm text-foreground">
+                Please verify that:
+              </p>
+              <ul className="text-xs space-y-1 list-disc list-inside">
+                <li>API key is correct</li>
+                <li>Authentication is enabled in Firebase Console</li>
+                <li>Domain restrictions are not blocking this origin</li>
+              </ul>
+            </>
+          )}
           <p className="text-xs text-muted-foreground">
-            Find these values in your Firebase Console under Project Settings.
+            Check Firebase Console under Project Settings for your correct credentials.
           </p>
         </div>
       </div>

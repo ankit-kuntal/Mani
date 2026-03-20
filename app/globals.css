@@ -126,15 +126,15 @@
 
 /* Anti-cheat measures for puzzle */
 .puzzle-container {
-  @apply select-none;
+  user-select: none;
 }
 
 .puzzle-canvas-wrapper {
-  @apply pointer-events-auto;
+  pointer-events: auto;
 }
 
 .puzzle-canvas-wrapper canvas {
-  @apply select-none;
+  user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
