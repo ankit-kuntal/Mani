@@ -2,6 +2,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  sendEmailVerification,
   User,
   Auth,
 } from 'firebase/auth';
@@ -13,12 +14,16 @@ export async function signUp(email: string, password: string): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Send email verification
+    await sendEmailVerification(user);
+
     // Create user document in Firestore
     await updateUserDocument(user.uid, {
       email,
       attemptsLeft: 2,
       hasSolvedCorrectly: false,
       rewardClaimed: false,
+      emailVerified: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -28,6 +33,34 @@ export async function signUp(email: string, password: string): Promise<User> {
     console.error('[Firebase Auth signUp] error', error.code, error.message);
     throw new Error(`${error.code}: ${error.message}`);
   }
+}
+
+export async function resendVerificationEmail(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently signed in');
+  }
+  await sendEmailVerification(user);
+}
+
+export async function checkEmailVerified(): Promise<boolean> {
+  const user = auth.currentUser;
+  if (!user) {
+    return false;
+  }
+  
+  // Reload user to get the latest email verification status
+  await user.reload();
+  
+  if (user.emailVerified) {
+    // Update Firestore document
+    await updateUserDocument(user.uid, {
+      emailVerified: true,
+      updatedAt: new Date(),
+    });
+  }
+  
+  return user.emailVerified;
 }
 
 export async function login(email: string, password: string): Promise<User> {

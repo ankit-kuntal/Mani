@@ -18,6 +18,7 @@ import {
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { EmailVerificationForm } from './EmailVerificationForm';
 
 const signupSchema = z
   .object({
@@ -35,6 +36,8 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export function SignupForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -49,8 +52,9 @@ export function SignupForm() {
     setLoading(true);
     try {
       await signUp(values.email, values.password);
-      toast.success('Account created successfully! Redirecting to dashboard...');
-      router.push('/dashboard');
+      toast.success('Account created! Please verify your email.');
+      setUserEmail(values.email);
+      setShowVerification(true);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to create account';
@@ -58,6 +62,11 @@ export function SignupForm() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Show email verification form after signup
+  if (showVerification) {
+    return <EmailVerificationForm email={userEmail} />;
   }
 
   return (
