@@ -14,19 +14,26 @@ export async function signUp(email: string, password: string): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Send email verification
+    // Send email verification first - this is the critical step
     await sendEmailVerification(user);
+    console.log('[v0] Email verification sent to:', email);
 
-    // Create user document in Firestore
-    await updateUserDocument(user.uid, {
-      email,
-      attemptsLeft: 2,
-      hasSolvedCorrectly: false,
-      rewardClaimed: false,
-      emailVerified: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    // Try to create user document in Firestore, but don't fail signup if it fails
+    try {
+      await updateUserDocument(user.uid, {
+        email,
+        attemptsLeft: 2,
+        hasSolvedCorrectly: false,
+        rewardClaimed: false,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log('[v0] User document created in Firestore');
+    } catch (firestoreError: any) {
+      // Log but don't fail - Firestore document can be created later
+      console.warn('[v0] Firestore document creation failed (will retry later):', firestoreError.message);
+    }
 
     return user;
   } catch (error: any) {
