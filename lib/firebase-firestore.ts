@@ -10,7 +10,6 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { any } from 'zod';
 
 export interface UserDocument {
   email: string;
@@ -25,6 +24,10 @@ export interface UserDocument {
 }
 
 export async function getUserDocument(emailOrUid: string): Promise<UserDocument | null> {
+  if (!db) {
+    console.warn('[v0] Firestore not initialized');
+    return null;
+  }
   try {
     // Try to get by UID first
     const docRef = doc(db, 'users', emailOrUid);
@@ -53,6 +56,9 @@ export async function updateUserDocument(
   uid: string,
   data: Partial<UserDocument>
 ): Promise<void> {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
   try {
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
