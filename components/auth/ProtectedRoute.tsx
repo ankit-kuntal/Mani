@@ -4,15 +4,18 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '@/components/auth/FirebaseProvider';
 import { Spinner } from '@/components/ui/spinner';
+import { EmailVerificationForm } from '@/components/forms/EmailVerificationForm';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredSolvedCorrectly?: boolean;
+  requireEmailVerification?: boolean;
 }
 
 export function ProtectedRoute({
   children,
   requiredSolvedCorrectly = false,
+  requireEmailVerification = true,
 }: ProtectedRouteProps) {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -41,6 +44,15 @@ export function ProtectedRoute({
 
   if (!user) {
     return null;
+  }
+
+  // Show email verification form if user hasn't verified their email
+  if (requireEmailVerification && !user.emailVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <EmailVerificationForm email={user.email || ''} />
+      </div>
+    );
   }
 
   return <>{children}</>;
