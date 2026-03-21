@@ -1,10 +1,10 @@
+// Firebase Authentication utilities - Updated
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendEmailVerification,
   User,
-  Auth,
 } from 'firebase/auth';
 import { auth } from './firebase';
 import { updateUserDocument, getUserDocument } from './firebase-firestore';
@@ -14,14 +14,19 @@ export async function signUp(email: string, password: string): Promise<User> {
     throw new Error('Firebase is not initialized. Please check your environment variables.');
   }
   try {
+    console.log('[v0] Step 1: Creating user with email/password...');
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log('[v0] Step 2: User created, UID:', user.uid);
 
     // Send email verification first - this is the critical step
+    console.log('[v0] Step 3: Sending email verification...');
     await sendEmailVerification(user);
+    console.log('[v0] Step 4: Email verification sent successfully!');
 
     // Try to create user document in Firestore, but don't fail signup if it fails
     try {
+      console.log('[v0] Step 5: Creating Firestore document...');
       await updateUserDocument(user.uid, {
         email,
         attemptsLeft: 2,
@@ -31,13 +36,16 @@ export async function signUp(email: string, password: string): Promise<User> {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-    } catch {
+      console.log('[v0] Step 6: Firestore document created');
+    } catch (firestoreError) {
+      console.log('[v0] Step 5b: Firestore failed (non-critical):', firestoreError);
       // Firestore document creation failed - can be retried later
     }
 
+    console.log('[v0] Step 7: Signup complete, returning user');
     return user;
   } catch (error: any) {
-    console.error('[Firebase Auth signUp] error', error.code, error.message);
+    console.error('[v0] SignUp FAILED at step:', error.code, error.message);
     throw new Error(`${error.code}: ${error.message}`);
   }
 }
