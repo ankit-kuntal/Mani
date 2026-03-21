@@ -1,3 +1,4 @@
+// Firebase configuration and initialization
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -12,22 +13,21 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
 };
 
-// Check if we have valid config
-const hasValidConfig = firebaseConfig.apiKey && firebaseConfig.projectId;
+// Check if we have valid config before initializing
+const hasValidConfig = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 
 if (hasValidConfig) {
-  // Initialize Firebase app
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  
-  // Initialize Auth and Firestore
-  auth = getAuth(app);
-  db = getFirestore(app);
-} else if (typeof window !== 'undefined') {
-  console.error('[Firebase] Missing Firebase configuration. Please check your environment variables.');
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.error('[Firebase] Initialization error:', error);
+  }
 }
 
 export { auth, db };
