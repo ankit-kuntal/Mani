@@ -1,23 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { checkEmailVerified, resendVerificationEmail } from '@/lib/firebase-auth';
 import { Mail, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/components/auth/FirebaseProvider';
 
 interface EmailVerificationFormProps {
-  email: string;
+  email?: string;
 }
 
 export function EmailVerificationForm({ email }: EmailVerificationFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [checking, setChecking] = useState(false);
   const [resending, setResending] = useState(false);
   const [verified, setVerified] = useState(false);
   const [countdown, setCountdown] = useState(0);
+
+  const resolvedEmail = useMemo(() => {
+    if (email && email.trim()) return email;
+    return user?.email || 'your email address';
+  }, [email, user]);
 
   // Auto-check verification status every 3 seconds
   useEffect(() => {
@@ -81,6 +89,14 @@ export function EmailVerificationForm({ email }: EmailVerificationFormProps) {
   if (verified) {
     return (
       <Card className="w-full max-w-md">
+        <div className="mb-4">
+        <Link
+          href="/"
+          className="text-sm text-gray-400 hover:text-[#ffb347] transition-all duration-300"
+        >
+          ← Back to Home
+        </Link>
+        </div>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="rounded-full bg-green-100 p-3 dark:bg-green-900/20">
@@ -106,7 +122,7 @@ export function EmailVerificationForm({ email }: EmailVerificationFormProps) {
         </div>
         <CardTitle>Verify Your Email</CardTitle>
         <CardDescription>
-          We've sent a verification link to <span className="font-medium text-foreground">{email}</span>
+          We've sent a verification link to <span className="font-medium text-foreground">{resolvedEmail}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -156,3 +172,4 @@ export function EmailVerificationForm({ email }: EmailVerificationFormProps) {
     </Card>
   );
 }
+export default EmailVerificationForm;

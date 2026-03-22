@@ -9,6 +9,11 @@ import {
 import { auth } from './firebase';
 import { updateUserDocument, getUserDocument } from './firebase-firestore';
 
+const getEmailVerificationActionCodeSettings = () => ({
+  url: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/` : 'http://localhost:3000/',
+  handleCodeInApp: false,
+});
+
 export async function signUp(email: string, password: string): Promise<User> {
   if (!auth) {
     throw new Error('Firebase is not initialized. Please check your environment variables.');
@@ -18,7 +23,15 @@ export async function signUp(email: string, password: string): Promise<User> {
     const user = userCredential.user;
 
     // Send email verification first
-    await sendEmailVerification(user);
+    try {
+      await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
+    } catch (error: any) {
+      // Log and propagate a user-friendly message
+      console.error('[Firebase] sendEmailVerification failed:', error);
+      throw new Error(
+        'Failed to send verification email. Please check your internet connection and verify auth domain settings in Firebase Console.'
+      );
+    }
 
     // Try to create user document in Firestore, but don't fail signup if it fails
     try {
@@ -30,14 +43,14 @@ export async function signUp(email: string, password: string): Promise<User> {
         emailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
     } catch {
       // Firestore document creation failed - can be retried later
     }
 
     return user;
   } catch (error: any) {
-    throw new Error(`${error.code}: ${error.message}`);
+    throw new Error(`${error.code || 'auth/error'}: ${error.message || error}`);
   }
 }
 
@@ -45,14 +58,18 @@ export async function resendVerificationEmail(): Promise<void> {
   if (!auth) {
     throw new Error('Firebase is not initialized');
   }
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently signed in');
+  }
+
   try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('No user is currently signed in');
-    }
-    await sendEmailVerification(user);
-  } catch (error) {
-    throw error;
+    await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
+  } catch (error: any) {
+    console.error('[Firebase] resendVerificationEmail failed:', error);
+    throw new Error(
+      'Failed to resend verification email. Please check your internet connection and try again. If the issue continues, check your Firebase auth domain settings.'
+    );
   }
 }
 
@@ -75,7 +92,7 @@ export async function checkEmailVerified(): Promise<boolean> {
         await updateUserDocument(user.uid, {
           emailVerified: true,
           updatedAt: new Date(),
-        });
+        } as any);
       } catch {
         // Firestore update failed - non-critical
       }
@@ -114,7 +131,7 @@ export async function loginWithTempPassword(
   // Note: In production, you'd handle this differently
   // For now, we'll just mark the user as authenticated via hasSolvedCorrectly flag
   return {
-    user: auth.currentUser as User,
+    user: auth!.currentUser as User,
     tempPasswordValid: true,
   };
 }
