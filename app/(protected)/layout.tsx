@@ -17,7 +17,9 @@ export default function ProtectedLayout({
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      if (auth) {
+        await signOut(auth);
+      }
       router.push('/signup');
     } catch (error) {
       console.error('Logout failed:', error);
