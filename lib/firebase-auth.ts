@@ -11,10 +11,10 @@ import { updateUserDocument, getUserDocument } from './firebase-firestore';
 
 // Simple action code settings - Firebase will use the default auth domain
 const getEmailVerificationActionCodeSettings = () => {
-  const baseUrl = typeof window !== 'undefined' 
-    ? window.location.origin 
+  const baseUrl = typeof window !== 'undefined'
+    ? window.location.origin
     : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
-  
+
   return {
     url: `${baseUrl}/login`,
     handleCodeInApp: false,
@@ -36,14 +36,14 @@ export async function signUp(email: string, password: string): Promise<User> {
     } catch (error: any) {
       // Log and propagate a user-friendly message
       console.error('[Firebase] sendEmailVerification failed:', error);
-      
+
       // Handle specific Firebase error codes
       if (error.code === 'auth/too-many-requests') {
         throw new Error(
           'Too many requests. Please wait a few minutes before trying again.'
         );
       }
-      
+
       throw new Error(
         'Failed to send verification email. Please check your internet connection and try again.'
       );
@@ -72,14 +72,14 @@ export async function resendVerificationEmail(): Promise<void> {
     await sendEmailVerification(user);
   } catch (error: any) {
     console.error('[Firebase] resendVerificationEmail failed:', error);
-    
+
     // Handle specific Firebase error codes
     if (error.code === 'auth/too-many-requests') {
       throw new Error(
         'Too many requests. Please wait a few minutes before trying again.'
       );
     }
-    
+
     throw new Error(
       'Failed to resend verification email. Please check your internet connection and try again.'
     );
@@ -95,10 +95,10 @@ export async function checkEmailVerified(): Promise<boolean> {
     if (!user) {
       return false;
     }
-    
+
     // Reload user to get the latest email verification status
     await user.reload();
-    
+
     if (user.emailVerified) {
       // Create/Update user document in Firestore ONLY after email is verified
       try {
@@ -116,7 +116,7 @@ export async function checkEmailVerified(): Promise<boolean> {
         console.error('[Firebase] Failed to create user document after verification');
       }
     }
-    
+
     return user.emailVerified;
   } catch {
     // Handle token expired or other auth errors gracefully

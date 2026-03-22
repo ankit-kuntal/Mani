@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '@/components/auth/FirebaseProvider';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 
 export default function HomePage() {

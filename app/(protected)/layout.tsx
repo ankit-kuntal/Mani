@@ -20,7 +20,7 @@ export default function ProtectedLayout({
       if (auth) {
         await signOut(auth);
       }
-      router.push('/signup');
+      // router.push('');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -33,7 +33,7 @@ export default function ProtectedLayout({
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/" className="text-xl font-bold">
-              🧩 Puzzle Reward
+              🧩 Mani
             </Link>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />

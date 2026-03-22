@@ -95,21 +95,21 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
-  
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Google AdSense */}
         {adsenseId && (
-          <Script
+          <script
             async
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
             crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
+          ></script>
         )}
         {/* Structured Data for SEO */}
-        <script
+        <Script
+          id="schema-org"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
