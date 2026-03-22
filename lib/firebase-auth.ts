@@ -9,10 +9,17 @@ import {
 import { auth } from './firebase';
 import { updateUserDocument, getUserDocument } from './firebase-firestore';
 
-const getEmailVerificationActionCodeSettings = () => ({
-  url: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/` : 'http://localhost:3000/',
-  handleCodeInApp: false,
-});
+// Simple action code settings - Firebase will use the default auth domain
+const getEmailVerificationActionCodeSettings = () => {
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
+  
+  return {
+    url: `${baseUrl}/login`,
+    handleCodeInApp: false,
+  };
+};
 
 export async function signUp(email: string, password: string): Promise<User> {
   if (!auth) {
@@ -23,8 +30,9 @@ export async function signUp(email: string, password: string): Promise<User> {
     const user = userCredential.user;
 
     // Send email verification - user data will be saved ONLY after verification
+    // Using simple sendEmailVerification without custom settings for better compatibility
     try {
-      await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
+      await sendEmailVerification(user);
     } catch (error: any) {
       // Log and propagate a user-friendly message
       console.error('[Firebase] sendEmailVerification failed:', error);
@@ -60,7 +68,8 @@ export async function resendVerificationEmail(): Promise<void> {
   }
 
   try {
-    await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
+    // Using simple sendEmailVerification without custom settings
+    await sendEmailVerification(user);
   } catch (error: any) {
     console.error('[Firebase] resendVerificationEmail failed:', error);
     

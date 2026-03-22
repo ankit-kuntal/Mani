@@ -17,6 +17,7 @@ export interface UserDocument {
   tempPassword?: string;
   hasSolvedCorrectly: boolean;
   rewardClaimed: boolean;
+  emailVerified: boolean;
   answerSubmitted?: string;
   ipAddress?: string;
   createdAt: Date;
