@@ -28,8 +28,16 @@ export async function signUp(email: string, password: string): Promise<User> {
     } catch (error: any) {
       // Log and propagate a user-friendly message
       console.error('[Firebase] sendEmailVerification failed:', error);
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/too-many-requests') {
+        throw new Error(
+          'Too many requests. Please wait a few minutes before trying again.'
+        );
+      }
+      
       throw new Error(
-        'Failed to send verification email. Please check your internet connection and verify auth domain settings in Firebase Console.'
+        'Failed to send verification email. Please check your internet connection and try again.'
       );
     }
 
@@ -55,8 +63,16 @@ export async function resendVerificationEmail(): Promise<void> {
     await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
   } catch (error: any) {
     console.error('[Firebase] resendVerificationEmail failed:', error);
+    
+    // Handle specific Firebase error codes
+    if (error.code === 'auth/too-many-requests') {
+      throw new Error(
+        'Too many requests. Please wait a few minutes before trying again.'
+      );
+    }
+    
     throw new Error(
-      'Failed to resend verification email. Please check your internet connection and try again. If the issue continues, check your Firebase auth domain settings.'
+      'Failed to resend verification email. Please check your internet connection and try again.'
     );
   }
 }
