@@ -9,10 +9,17 @@ import {
 import { auth } from './firebase';
 import { updateUserDocument, getUserDocument } from './firebase-firestore';
 
-const getEmailVerificationActionCodeSettings = () => ({
-  url: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/` : 'http://localhost:3000/',
-  handleCodeInApp: false,
-});
+// Simple action code settings - Firebase will use the default auth domain
+const getEmailVerificationActionCodeSettings = () => {
+  const baseUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
+  
+  return {
+    url: `${baseUrl}/login`,
+    handleCodeInApp: false,
+  };
+};
 
 export async function signUp(email: string, password: string): Promise<User> {
   if (!auth) {
@@ -22,31 +29,28 @@ export async function signUp(email: string, password: string): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Send email verification first
+    // Send email verification - user data will be saved ONLY after verification
+    // Using simple sendEmailVerification without custom settings for better compatibility
     try {
-      await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
+      await sendEmailVerification(user);
     } catch (error: any) {
       // Log and propagate a user-friendly message
       console.error('[Firebase] sendEmailVerification failed:', error);
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/too-many-requests') {
+        throw new Error(
+          'Too many requests. Please wait a few minutes before trying again.'
+        );
+      }
+      
       throw new Error(
-        'Failed to send verification email. Please check your internet connection and verify auth domain settings in Firebase Console.'
+        'Failed to send verification email. Please check your internet connection and try again.'
       );
     }
 
-    // Try to create user document in Firestore, but don't fail signup if it fails
-    try {
-      await updateUserDocument(user.uid, {
-        email,
-        attemptsLeft: 2,
-        hasSolvedCorrectly: false,
-        rewardClaimed: false,
-        emailVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as any);
-    } catch {
-      // Firestore document creation failed - can be retried later
-    }
+    // NOTE: User document is NOT created here - it will be created only after email verification
+    // This ensures user data is saved only when user is verified
 
     return user;
   } catch (error: any) {
@@ -64,11 +68,20 @@ export async function resendVerificationEmail(): Promise<void> {
   }
 
   try {
-    await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
+    // Using simple sendEmailVerification without custom settings
+    await sendEmailVerification(user);
   } catch (error: any) {
     console.error('[Firebase] resendVerificationEmail failed:', error);
+    
+    // Handle specific Firebase error codes
+    if (error.code === 'auth/too-many-requests') {
+      throw new Error(
+        'Too many requests. Please wait a few minutes before trying again.'
+      );
+    }
+    
     throw new Error(
-      'Failed to resend verification email. Please check your internet connection and try again. If the issue continues, check your Firebase auth domain settings.'
+      'Failed to resend verification email. Please check your internet connection and try again.'
     );
   }
 }
@@ -87,14 +100,20 @@ export async function checkEmailVerified(): Promise<boolean> {
     await user.reload();
     
     if (user.emailVerified) {
-      // Try to update Firestore document, but don't fail if it errors
+      // Create/Update user document in Firestore ONLY after email is verified
       try {
         await updateUserDocument(user.uid, {
+          email: user.email,
+          attemptsLeft: 2,
+          hasSolvedCorrectly: false,
+          rewardClaimed: false,
           emailVerified: true,
+          createdAt: new Date(),
           updatedAt: new Date(),
         } as any);
       } catch {
-        // Firestore update failed - non-critical
+        // Firestore document creation failed - non-critical for verification check
+        console.error('[Firebase] Failed to create user document after verification');
       }
     }
     

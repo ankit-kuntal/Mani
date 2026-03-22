@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { login } from '@/lib/firebase-auth';
+import { getUserDocument } from '@/lib/firebase-firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,45 +19,57 @@ import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-const loginSchema = z.object({
+const tempPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  tempPassword: z.string().min(1, 'Temporary password is required'),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type TempPasswordFormValues = z.infer<typeof tempPasswordSchema>;
 
-export function LoginForm() {
+export function TempPasswordForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<TempPasswordFormValues>({
+    resolver: zodResolver(tempPasswordSchema),
     defaultValues: {
       email: '',
-      password: '',
+      tempPassword: '',
     },
   });
 
-  async function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: TempPasswordFormValues) {
     setLoading(true);
     try {
-      const user = await login(values.email, values.password);
-      
-      if (!user.emailVerified) {
-        toast.error('Please verify your email before logging in');
+      // Validate temp password against Firestore
+      const userDoc = await getUserDocument(values.email);
+
+      if (!userDoc) {
+        toast.error('User not found');
         setLoading(false);
         return;
       }
-      
-      toast.success('Logged in successfully!');
-      router.push('/dashboard');
-    } catch (error: any) {
-      let errorMessage = 'Failed to log in';
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid email or password';
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
+
+      if (!userDoc.hasSolvedCorrectly) {
+        toast.error('You must solve the puzzle first');
+        setLoading(false);
+        return;
       }
+
+      if (userDoc.tempPassword !== values.tempPassword) {
+        toast.error('Invalid temporary password');
+        setLoading(false);
+        return;
+      }
+
+      // Temp password is valid, redirect to claim page
+      toast.success('Verified successfully!');
+      // Store email in sessionStorage for the claim page
+      sessionStorage.setItem('verifiedEmail', values.email);
+      router.push('/claim');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to verify';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -67,9 +79,9 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold">Log In</h1>
+        <h1 className="text-2xl font-bold">Claim Your Reward</h1>
         <p className="text-sm text-muted-foreground">
-          Enter your email and password to access your dashboard
+          Enter your email and temporary password to claim your reward
         </p>
       </div>
 
@@ -91,13 +103,13 @@ export function LoginForm() {
 
           <FormField
             control={form.control}
-            name="password"
+            name="tempPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Temporary Password</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Enter your password"
+                    placeholder="Enter your 8-character temp password"
                     type="password"
                     {...field}
                   />
@@ -112,22 +124,16 @@ export function LoginForm() {
             className="w-full"
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {loading ? 'Verifying...' : 'Verify & Claim'}
           </Button>
         </form>
       </Form>
 
-      <div className="text-center text-sm space-y-2">
+      <div className="text-center text-sm">
         <p className="text-muted-foreground">
-          Don't have an account?{' '}
-          <Link href="/signup" className="text-primary hover:underline font-medium">
-            Sign up
-          </Link>
-        </p>
-        <p className="text-muted-foreground">
-          Have a temporary password?{' '}
-          <Link href="/verify-reward" className="text-primary hover:underline font-medium">
-            Claim reward
+          Need to log in instead?{' '}
+          <Link href="/login" className="text-primary hover:underline font-medium">
+            Log in
           </Link>
         </p>
       </div>

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { signUp } from '@/lib/firebase-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   FormField,
   FormItem,
@@ -25,6 +26,9 @@ const signupSchema = z
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
+    acceptedTerms: z.boolean().refine((val) => val === true, {
+      message: 'You must accept the terms and conditions',
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -45,6 +49,7 @@ export function SignupForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      acceptedTerms: false,
     },
   });
 
@@ -122,7 +127,32 @@ export function SignupForm() {
             )}
           />
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <FormField
+            control={form.control}
+            name="acceptedTerms"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value === true}
+                    onCheckedChange={field.onChange}
+                    id="terms"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="font-normal cursor-pointer" htmlFor="terms">
+                    I have read and accepted the{' '}
+                    <Link href="/terms" className="text-primary hover:underline">
+                      terms and conditions
+                    </Link>
+                  </FormLabel>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <Button type="submit" className="w-full" disabled={loading || !form.watch('acceptedTerms')}>
             {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
