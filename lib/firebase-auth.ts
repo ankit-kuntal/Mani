@@ -22,7 +22,7 @@ export async function signUp(email: string, password: string): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Send email verification first
+    // Send email verification - user data will be saved ONLY after verification
     try {
       await sendEmailVerification(user, getEmailVerificationActionCodeSettings());
     } catch (error: any) {
@@ -33,20 +33,8 @@ export async function signUp(email: string, password: string): Promise<User> {
       );
     }
 
-    // Try to create user document in Firestore, but don't fail signup if it fails
-    try {
-      await updateUserDocument(user.uid, {
-        email,
-        attemptsLeft: 2,
-        hasSolvedCorrectly: false,
-        rewardClaimed: false,
-        emailVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as any);
-    } catch {
-      // Firestore document creation failed - can be retried later
-    }
+    // NOTE: User document is NOT created here - it will be created only after email verification
+    // This ensures user data is saved only when user is verified
 
     return user;
   } catch (error: any) {
@@ -87,14 +75,20 @@ export async function checkEmailVerified(): Promise<boolean> {
     await user.reload();
     
     if (user.emailVerified) {
-      // Try to update Firestore document, but don't fail if it errors
+      // Create/Update user document in Firestore ONLY after email is verified
       try {
         await updateUserDocument(user.uid, {
+          email: user.email,
+          attemptsLeft: 2,
+          hasSolvedCorrectly: false,
+          rewardClaimed: false,
           emailVerified: true,
+          createdAt: new Date(),
           updatedAt: new Date(),
         } as any);
       } catch {
-        // Firestore update failed - non-critical
+        // Firestore document creation failed - non-critical for verification check
+        console.error('[Firebase] Failed to create user document after verification');
       }
     }
     

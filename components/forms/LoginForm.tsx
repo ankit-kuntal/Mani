@@ -9,7 +9,6 @@ import { login } from '@/lib/firebase-auth';
 import { getUserDocument } from '@/lib/firebase-firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   FormField,
   FormItem,
@@ -24,9 +23,6 @@ import Link from 'next/link';
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   tempPassword: z.string().min(1, 'Temporary password is required'),
-  acceptedTerms: z.boolean().refine((val) => val === true, {
-    message: 'You must accept the terms and conditions',
-  }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -40,7 +36,6 @@ export function LoginForm() {
     defaultValues: {
       email: '',
       tempPassword: '',
-      acceptedTerms: false,
     },
   });
 
@@ -125,33 +120,10 @@ export function LoginForm() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="acceptedTerms"
-            render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    id="terms"
-                  />
-                </FormControl>
-                <FormLabel className="font-normal cursor-pointer" htmlFor="terms">
-                  I have read and accepted the{' '}
-                  <Link href="/terms" className="text-primary hover:underline">
-                    terms and conditions
-                  </Link>
-                </FormLabel>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <Button
             type="submit"
             className="w-full"
-            disabled={loading || !form.watch('acceptedTerms')}
+            disabled={loading}
           >
             {loading ? 'Logging in...' : 'Log In'}
           </Button>
