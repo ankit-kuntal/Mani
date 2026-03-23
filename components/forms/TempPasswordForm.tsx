@@ -18,6 +18,7 @@ import {
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 
 const tempPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -29,6 +30,7 @@ type TempPasswordFormValues = z.infer<typeof tempPasswordSchema>;
 export function TempPasswordForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<TempPasswordFormValues>({
     resolver: zodResolver(tempPasswordSchema),
@@ -108,11 +110,24 @@ export function TempPasswordForm() {
               <FormItem>
                 <FormLabel>Temporary Password</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Enter your 8-character temp password"
-                    type="password"
-                    {...field}
-                  />
+                  <div className="relative">
+                    <Input
+                      placeholder="Enter your 8-character temp password"
+                      type={showPassword ? "text" : "password"}
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

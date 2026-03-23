@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
+import { ShieldCheck, LogOut } from 'lucide-react';
 
 export default function ProtectedLayout({
   children,
@@ -35,10 +35,18 @@ export default function ProtectedLayout({
             <Link href="/" className="text-xl font-bold">
               🧩 Mani
             </Link>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/verify-reward">
+                <Button variant="outline" size="sm">
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Verify Reward
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </header>
 
