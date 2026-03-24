@@ -1,10 +1,18 @@
 import { TempPasswordForm } from '@/components/forms/TempPasswordForm';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 
-export default function VerifyRewardPage() {
+export default async function VerifyRewardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const resolvedParams = await searchParams;
+  const tempPasswordParam = resolvedParams.tempPassword;
+  const tempPasswordStr = typeof tempPasswordParam === 'string' ? tempPasswordParam : '';
+
   return (
     <AuthLayout>
-      <TempPasswordForm />
+      <TempPasswordForm initialTempPassword={tempPasswordStr} />
     </AuthLayout>
   );
 }

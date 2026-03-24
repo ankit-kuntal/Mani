@@ -6,7 +6,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/components/auth/FirebaseProvider';
-import { claimReward, getUserDocument } from '@/lib/firebase-firestore';
+import { processRazorpayPayout } from '@/lib/razorpay';
+import { claimReward, getUserDocument, updateUserDocument } from '@/lib/firebase-firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -109,9 +110,47 @@ export function ClaimRewardForm() {
         submittedAt: new Date(),
       };
 
-      await claimReward(user.uid, payoutDetails);
-      toast.success('Reward claim submitted! You will receive your payment in 24-72 business hours.');
-      router.push('/reward-submitted');
+      // 1. Initial lock in Firestore (client-side)
+      await claimReward(user.uid, {
+        ...payoutDetails,
+        paymentStatus: 'processing',
+        rewardPaid: false,
+      });
+
+      toast.info('Processing automatic payout...', { duration: 3000 });
+
+      // 2. Execute Server Action securely taking credentials from .env.local
+      const amountINR = 50; // Set your default reward amount here
+      const payoutResult = await processRazorpayPayout(
+        user.uid,
+        user.email || '',
+        payoutDetails as any,
+        amountINR
+      );
+
+      // 3. Update Firestore based on Result
+      if (payoutResult.success) {
+        await updateUserDocument(user.uid, {
+          rewardPaid: true,
+          paymentStatus: 'success',
+          payoutId: payoutResult.payoutId,
+          paidAt: new Date()
+        } as any);
+
+        toast.success('Reward paid successfully to your account!');
+        router.push('/reward-submitted');
+      } else {
+        await updateUserDocument(user.uid, {
+          rewardPaid: false,
+          paymentStatus: 'failed',
+          failureReason: payoutResult.error,
+          failedAt: new Date()
+        } as any);
+
+        toast.error(`Payout failed: ${payoutResult.error}`);
+        // Do not redirect so they can fix their details and retry
+      }
+
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to claim reward';

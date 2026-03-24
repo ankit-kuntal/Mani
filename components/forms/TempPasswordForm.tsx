@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useAuth } from '@/components/auth/FirebaseProvider';
 import { getUserDocument } from '@/lib/firebase-firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,30 +22,42 @@ import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 
 const tempPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  tempPassword: z.string().min(1, 'Temporary password is required'),
+  email: z.string().trim().email('Invalid email address'),
+  tempPassword: z.string().trim().min(1, 'Temporary password is required'),
 });
 
 type TempPasswordFormValues = z.infer<typeof tempPasswordSchema>;
 
-export function TempPasswordForm() {
+export function TempPasswordForm({
+  initialTempPassword = ''
+}: {
+  initialTempPassword?: string
+}) {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<TempPasswordFormValues>({
     resolver: zodResolver(tempPasswordSchema),
     defaultValues: {
-      email: '',
-      tempPassword: '',
+      email: user?.email || '',
+      tempPassword: initialTempPassword || '',
     },
   });
+
+  useEffect(() => {
+    if (user?.email && !form.getValues('email')) {
+      form.setValue('email', user.email);
+    }
+  }, [user, form]);
 
   async function onSubmit(values: TempPasswordFormValues) {
     setLoading(true);
     try {
-      // Validate temp password against Firestore
-      const userDoc = await getUserDocument(values.email);
+      // Validate temp password against Firestore, looking up by UID first, fallback to email
+      const identifier = user?.uid || values.email;
+      const userDoc = await getUserDocument(identifier);
 
       if (!userDoc) {
         toast.error('User not found');
